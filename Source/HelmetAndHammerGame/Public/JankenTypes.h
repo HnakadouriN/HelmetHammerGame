@@ -28,6 +28,7 @@ struct FJankenResult
 {
 	GENERATED_BODY()
 
+	bool bReverse = false;
 	EHand PlayerHand = EHand::None;
 	EHand OpponentHand = EHand::None;
 	bool bPlayerAttack = false;

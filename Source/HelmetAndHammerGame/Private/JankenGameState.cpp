@@ -3,6 +3,7 @@
 
 #include "JankenGameState.h"
 #include "TimerManager.h"
+#include "Engine/Engine.h"
 
 AJankenGameState::AJankenGameState()
 {
@@ -12,6 +13,9 @@ AJankenGameState::AJankenGameState()
 void AJankenGameState::BeginPlay()
 {
 	Super::BeginPlay();
+
+	OnPhaseChanged.AddDynamic(this, &AJankenGameState::HandlePhaseChanged);
+
 	OnPhaseChanged.Broadcast(Phase);
 }
 
@@ -107,4 +111,28 @@ void AJankenGameState::ResolveAction()
 		Phase = EPhase::WaitingInput;
 		OnPhaseChanged.Broadcast(Phase);
 		}, 3.0f, false);
+}
+void AJankenGameState::HandlePhaseChanged(EPhase NewPhase)
+{
+	/* 1) コンソールログ */
+	UE_LOG(LogTemp, Log, TEXT("[Phase] %s  Hand=%s  Opp=%s  Rev=%d  Win=%d"),
+		*UEnum::GetValueAsString(NewPhase),
+		*UEnum::GetValueAsString(RoundResult.PlayerHand),
+		*UEnum::GetValueAsString(RoundResult.OpponentHand),
+		RoundResult.bReverse,
+		RoundResult.bPlayerWin);
+
+	/* 2) 画面左上に 4 秒表示 */
+	if (GEngine)
+	{
+		FString Msg = FString::Printf(TEXT("Phase:%s  Reverse:%s"),
+			*UEnum::GetValueAsString(NewPhase),
+			RoundResult.bReverse ? TEXT("ON") : TEXT("OFF"));
+
+		GEngine->AddOnScreenDebugMessage(
+			/*Key*/   1,          // 同じキーなら上書き
+			/*Time*/  4.f,
+			/*Color*/ FColor::Yellow,
+			Msg);
+	}
 }

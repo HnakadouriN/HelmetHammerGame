@@ -41,4 +41,8 @@ private:
 
 	UPROPERTY(EditAnywhere, Instanced)
 	URuleBase* CurrentRule = nullptr;
+
+	/*デバッグ用*/
+	UFUNCTION()
+	void HandlePhaseChanged(EPhase NewPhase);
 };
