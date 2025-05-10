@@ -15,7 +15,7 @@ class HELMETANDHAMMERGAME_API URule_Reverse : public URuleBase
 	GENERATED_BODY()
 
 public:
-	virtual int32 ModifyJankenResult(int32 BaseResult) const override
+	virtual int32 ModifyJankenResult(int32 BaseResult,int32) const override
 	{
 		return -BaseResult;
 	}

@@ -14,125 +14,125 @@ void AJankenGameState::BeginPlay()
 {
 	Super::BeginPlay();
 
-	OnPhaseChanged.AddDynamic(this, &AJankenGameState::HandlePhaseChanged);
+	PlayersInfo.Init(FPlayerRoundInfo{}, 2);
 
 	OnPhaseChanged.Broadcast(Phase);
 }
-
 void AJankenGameState::SetPlayerHand(EHand NewHand)
 {
-	if (Phase != EPhase::WaitingInput) return;
-
-	RoundResult.PlayerHand = NewHand;
-	RoundResult.OpponentHand = static_cast<EHand>(FMath::RandRange(0, 2));
-
-	Phase = EPhase::CountingDown;
-	OnPhaseChanged.Broadcast(Phase);
-	StartCountdown();
+	PlayersInfo[0].PlayerHand = NewHand;
 }
-
-void AJankenGameState::StartCountdown()
-{
-	GetWorld()->GetTimerManager().SetTimer(CountdownTimerHandle, this, &AJankenGameState::FinishCountdown, 3.0f, false);
-}
-
-void AJankenGameState::FinishCountdown()
-{
-	ShowHandResult();
-}
-
-void AJankenGameState::SetRule(URuleBase* NewRule)
-{
-	if (Phase == EPhase::WaitingInput)
-	{
-		CurrentRule = NewRule;
-		if (CurrentRule) CurrentRule->PreHand(this);
-	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Cannot set rule while in phase: %s"), *UEnum::GetValueAsString(Phase));
-	}
-}
-
-int32 AJankenGameState::CalcJankenResult() const
-{
-	static const int32 Table[3][3] = { {0,1,-1},{-1,0,1},{1,-1,0} };
-	int32 Base = Table[(int32)RoundResult.PlayerHand][(int32)RoundResult.OpponentHand];
-	return Base;
-};
-
-void AJankenGameState::ShowHandResult()
-{
-	Phase = EPhase::HandResult;
-	OnPhaseChanged.Broadcast(Phase);
-
-	int32 Result = CalcJankenResult();
-	if (Result == 0)
-	{
-		Phase = EPhase::WaitingInput;
-		OnPhaseChanged.Broadcast(Phase);
-		return;
-	}
-
-	Phase = EPhase::ActionSelect;
-	OnPhaseChanged.Broadcast(Phase);
-
-	if (CurrentRule) CurrentRule->OnEnterAction(this);
-}
-
 void AJankenGameState::SetPlayerAction(bool bAttack)
 {
-	if (Phase != EPhase::ActionSelect) return;
-	RoundResult.bPlayerAttack = bAttack;
-	RoundResult.bPlayerDefend = !bAttack;
-	ResolveAction();
+	PlayersInfo[0].bPlayerAttack = bAttack;
 }
-
-void AJankenGameState::ResolveAction()
+void AJankenGameState::AddRule(URuleBase* Rule)
 {
-	const bool bPlayerJankenWin = CalcJankenResult() == 1;
-
-	if (bPlayerJankenWin)
+	if (Rule)
 	{
-		RoundResult.bPlayerWin = RoundResult.bPlayerAttack;
+		ActiveRules.Add(Rule);
+	}
+}
+void AJankenGameState::ClearRule()
+{
+	ActiveRules.Empty();
+}
+void AJankenGameState::TryResolveHands()
+{
+	// じゃんけんの手を決定
+	PlayersInfo[0].PlayerHand = PlayersInfo[0].PlayerHand;
+	PlayersInfo[1].OpponentHand = PlayersInfo[1].OpponentHand;
+	// ルールを適用
+	int32 Result = CalcResultRaw();
+	Result = ApplyRulesToResult(Result);
+	// 勝敗を決定
+	if (Result == 0)
+	{
+		OnRoundFinished.Broadcast(-1);
 	}
 	else
 	{
-		RoundResult.bPlayerWin = !RoundResult.bPlayerAttack;
+		OnRoundFinished.Broadcast(Result);
 	}
-	if (CurrentRule) CurrentRule->PostResolve(this);
-
-	Phase = EPhase::Resolve;
-	OnPhaseChanged.Broadcast(Phase);
-
-	GetWorldTimerManager().SetTimer(CountdownTimerHandle, [this]() {
-		RoundResult = FJankenResult{};
-		CurrentRule = nullptr;
-		Phase = EPhase::WaitingInput;
-		OnPhaseChanged.Broadcast(Phase);
-		}, 3.0f, false);
 }
-void AJankenGameState::HandlePhaseChanged(EPhase NewPhase)
+void AJankenGameState::EnterActionPhase()
 {
-	/* 1) コンソールログ */
-	UE_LOG(LogTemp, Log, TEXT("[Phase] %s  Hand=%s  Opp=%s  Rev=%d  Win=%d"),
-		*UEnum::GetValueAsString(NewPhase),
-		*UEnum::GetValueAsString(RoundResult.PlayerHand),
-		*UEnum::GetValueAsString(RoundResult.OpponentHand),
-		RoundResult.bReverse,
-		RoundResult.bPlayerWin);
-
-	/* 2) 画面左上に 4 秒表示 */
-	if (GEngine)
+	Phase = EPhase::ActionSelect;
+	OnPhaseChanged.Broadcast(Phase);
+}
+void AJankenGameState::TryResolveActions()
+{
+	// アクションを決定
+	PlayersInfo[0].bPlayerDefend = PlayersInfo[0].bPlayerDefend;
+	PlayersInfo[1].bPlayerAttack = PlayersInfo[1].bPlayerAttack;
+	// ルールを適用
+	int32 Result = CalcResultRaw();
+	Result = ApplyRulesToResult(Result);
+	// 勝敗を決定
+	if (Result == 0)
 	{
-		FString Msg = FString::Printf(TEXT("Phase:%s  Reverse:%s"),
-			*UEnum::GetValueAsString(NewPhase),
-			RoundResult.bReverse ? TEXT("ON") : TEXT("OFF"));
-
-		GEngine->AddOnScreenDebugMessage(
-			/*Key*/   1,          // 同じキーなら上書き
-			/*Time*/  4.f,
-			/*Color*/ FColor::Yellow,
-			Msg);
+		OnRoundFinished.Broadcast(-1);
+	}
+	else
+	{
+		OnRoundFinished.Broadcast(Result);
 	}
 }
+void AJankenGameState::NextRound()
+{
+	// 次のラウンドへ
+	Phase = EPhase::WaitingInput;
+	OnPhaseChanged.Broadcast(Phase);
+}
+int32 AJankenGameState::CalcResultRaw() const
+{
+	// じゃんけんの手を比較
+	if (PlayersInfo[0].PlayerHand == PlayersInfo[1].OpponentHand)
+	{
+		return 0; // Draw
+	}
+	else if ((PlayersInfo[0].PlayerHand == EHand::Rock && PlayersInfo[1].OpponentHand == EHand::Scissors) ||
+		(PlayersInfo[0].PlayerHand == EHand::Paper && PlayersInfo[1].OpponentHand == EHand::Rock) ||
+		(PlayersInfo[0].PlayerHand == EHand::Scissors && PlayersInfo[1].OpponentHand == EHand::Paper))
+	{
+		return 1; // Player wins
+	}
+	else
+	{
+		return 2; // Opponent wins
+	}
+}
+int32 AJankenGameState::ApplyRulesToResult(int32 BaseResult) const
+{
+	int32 Result = BaseResult;
+	for (URuleBase* Rule : ActiveRules)
+	{
+		Result = Rule->ModifyJankenResult(Result, 0);
+	}
+	return Result;
+}
+
+//void AJankenGameState::HandlePhaseChanged(EPhase NewPhase)
+//{
+//	/* 1) コンソールログ */
+//	UE_LOG(LogTemp, Log, TEXT("[Phase] %s  Hand=%s  Opp=%s  Rev=%d  Win=%d"),
+//		*UEnum::GetValueAsString(NewPhase),
+//		*UEnum::GetValueAsString(RoundResult.PlayerHand),
+//		*UEnum::GetValueAsString(RoundResult.OpponentHand),
+//		RoundResult.bReverse,
+//		RoundResult.bPlayerWin);
+//
+//	/* 2) 画面左上に 4 秒表示 */
+//	if (GEngine)
+//	{
+//		FString Msg = FString::Printf(TEXT("Phase:%s  Reverse:%s"),
+//			*UEnum::GetValueAsString(NewPhase),
+//			RoundResult.bReverse ? TEXT("ON") : TEXT("OFF"));
+//
+//		GEngine->AddOnScreenDebugMessage(
+//			/*Key*/   1,          // 同じキーなら上書き
+//			/*Time*/  4.f,
+//			/*Color*/ FColor::Yellow,
+//			Msg);
+//	}
+//}

@@ -9,6 +9,7 @@
 #include "JankenGameState.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnPhaseChanged, EPhase, NewPhase);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnRoundFinished, int32, WinnerId);
 
 UCLASS()
 class HELMETANDHAMMERGAME_API AJankenGameState : public AGameStateBase
@@ -18,31 +19,43 @@ class HELMETANDHAMMERGAME_API AJankenGameState : public AGameStateBase
 public:
 	AJankenGameState();
 
+	//入力周りの関数
 	void SetPlayerHand(EHand NewHand);
 	void SetPlayerAction(bool bAttack);
-	UFUNCTION(BlueprintCallable) void SetRule(URuleBase* NewRule);
 
+	//ルール周りの関数
+	void AddRule(URuleBase* Rule)
+	{
+	}
+	void ClearRule()
+	{
+	}
 
+	//ルールの設定
+	UPROPERTY(BlueprintReadOnly) TArray<FPlayerRoundInfo> PlayersInfo;
+	UPROPERTY(BlueprintReadOnly) EPhase Phase = EPhase::WaitingInput;
+	UPROPERTY(BlueprintReadOnly) int32 AttackerId = -1;
+
+	//イベント
 	UPROPERTY(BlueprintAssignable) FOnPhaseChanged OnPhaseChanged;
-	UPROPERTY(BlueprintReadOnly) FJankenResult RoundResult;
+	UPROPERTY(BlueprintAssignable) FOnRoundFinished OnRoundFinished;
+
 
 protected:
 	virtual void BeginPlay() override;
 
 private:
-	void StartCountdown();
-	void FinishCountdown();
-	void ShowHandResult();
-	void ResolveAction();
-	int32 CalcJankenResult() const;
+	void TryResolveHands();
+	void EnterActionPhase();
+	void TryResolveActions();
+	void NextRound();
+	int32 CalcResultRaw() const;
+	int32 ApplyRulesToResult(int32) const;
 
-	EPhase Phase = EPhase::WaitingInput;
+	TArray<URuleBase*> ActiveRules;
 	FTimerHandle CountdownTimerHandle;
 
-	UPROPERTY(EditAnywhere, Instanced)
-	URuleBase* CurrentRule = nullptr;
-
 	/*デバッグ用*/
-	UFUNCTION()
-	void HandlePhaseChanged(EPhase NewPhase);
+	//UFUNCTION()
+	//void HandlePhaseChanged(EPhase NewPhase);
 };

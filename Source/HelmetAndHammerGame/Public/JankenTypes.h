@@ -1,17 +1,17 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 #include "JankenTypes.generated.h"
 
+//じゃんけんの手の種類
 UENUM(BlueprintType)
 enum class EHand:uint8
 {
-	Rock   UMETA(DisplayName = "Gu-"),
-	Paper  UMETA(DisplayName = "Pa-"),
-	Scissors UMETA(DisplayName = "Choki-"),
-	None   UMETA(DisplayName = "No")
+	Rock,
+	Paper,
+	Scissors,
+	None
 };
 
+//じゃんけんのルールの種類
 UENUM(BlueprintType)
 enum class EPhase :uint8
 {
@@ -23,15 +23,23 @@ enum class EPhase :uint8
 	Finished
 };
 
+//1プレーヤー分のラウンド情報
 USTRUCT(BlueprintType)
-struct FJankenResult
+struct FPlayerRoundInfo
 {
 	GENERATED_BODY()
 
-	bool bReverse = false;
+	UPROPERTY(BlueprintReadOnly)
 	EHand PlayerHand = EHand::None;
+	UPROPERTY(BlueprintReadOnly)
 	EHand OpponentHand = EHand::None;
+
+	UPROPERTY(BlueprintReadOnly)
+	bool bReverse = false;
+	UPROPERTY(BlueprintReadOnly)
 	bool bPlayerAttack = false;
+	UPROPERTY(BlueprintReadOnly)
 	bool bPlayerDefend = false;
+	UPROPERTY(BlueprintReadOnly)
 	bool bPlayerWin = false;
 };
