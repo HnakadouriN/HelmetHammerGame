@@ -28,8 +28,45 @@ void AJankenGameState::SetPlayerHand(int32 Id,EHand NewHand)
 }
 void AJankenGameState::SetPlayerAction(int32 Id,bool bAttack)
 {
-	if (Phase != EPhase::ActionSelect) return;
-	PlayersInfo[Id].bPlayerAttack = bAttack; PlayersInfo[Id].bPlayerDefend = !bAttack; TryResolveActions();
+	if (Phase != EPhase::ActionSelect || Id > 1) return;
+
+	FPlayerRoundInfo& P = PlayersInfo[Id];
+	if (P.bPlayerAttack || P.bPlayerDefend) return;                // 2 回押し禁止
+
+	P.bPlayerAttack = bAttack;
+	P.bPlayerDefend = !bAttack;
+	P.AttackTime = GetWorld()->GetTimeSeconds();       // ★ 時刻保存
+
+	/* ---- 先着判定 ---- */
+	int32 Other = 1 - Id;
+	FPlayerRoundInfo& O = PlayersInfo[Other];
+
+	// 相手がまだ入力していない → ここでは決着せず待つ
+	if (O.AttackTime == 0.f) return;
+
+	/* 両者入力済み。先に正しいボタンを押した方が勝ち */
+	bool IdxCorrect = (Id == AttackerId) ? P.bPlayerAttack : P.bPlayerDefend;
+	bool OtherCorrect = (Other == AttackerId) ? O.bPlayerAttack : O.bPlayerDefend;
+
+	int32 Winner = -1;
+	if (IdxCorrect && OtherCorrect)
+	{
+		Winner = (P.AttackTime < O.AttackTime) ? Id : Other;   // 早押し勝負
+	}
+	else if (IdxCorrect)        Winner = Id;
+	else if (OtherCorrect)      Winner = Other;
+	else                        Winner = Other; // 両者間違い → 後勝ちでお茶を濁す
+
+	PlayersInfo[Winner].bPlayerWin = true;
+	Phase = EPhase::Resolve;
+	OnPhaseChanged.Broadcast(Phase);
+
+	// ログ & 次ラウンドへ
+	UE_LOG(LogTemp, Log, TEXT("WINNER = P%d  Δ=%.3f sec"),
+		Winner, FMath::Abs(P.AttackTime - O.AttackTime));
+
+	GetWorldTimerManager().SetTimer(CountdownTimerHandle, this,
+		&AJankenGameState::NextRound, 2.f, false);
 }
 void AJankenGameState::EnterActionPhase()
 {
@@ -139,6 +176,17 @@ void AJankenGameState::HandlePhaseChanged(EPhase NewPhase)
 		*UEnum::GetValueAsString(PlayersInfo[0].PlayerHand),
 		*UEnum::GetValueAsString(PlayersInfo[1].PlayerHand),
 		AttackerId);
+
+	if (NewPhase == EPhase::Resolve)
+	{
+		int32 Winner = PlayersInfo[0].bPlayerWin ? 0 : 1;
+		float Delta = FMath::Abs(PlayersInfo[0].AttackTime - PlayersInfo[1].AttackTime);
+
+		FString Msg = FString::Printf(TEXT("Winner: P%d   Δ=%.3f sec"), Winner, Delta);
+		UE_LOG(LogTemp, Log, TEXT("%s"), *Msg);
+		if (GEngine)
+			GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Green, Msg);
+	}
 
 	/* 2) 画面左上 */
 	if (GEngine)

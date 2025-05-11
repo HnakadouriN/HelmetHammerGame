@@ -38,4 +38,6 @@ struct FPlayerRoundInfo
 	bool bPlayerDefend = false;
 	UPROPERTY(BlueprintReadOnly)
 	bool bPlayerWin = false;
+
+	float AttackTime = 0.0f;
 };
