@@ -23,55 +23,50 @@ void AJankenGameState::BeginPlay()
 }
 void AJankenGameState::SetPlayerHand(int32 Id,EHand NewHand)
 {
-	if (Phase != EPhase::WaitingInput || !PlayersInfo.IsValidIndex(Id))
-	{
-		return;
-	}
-	PlayersInfo[Id].PlayerHand = NewHand;
-	TryResolveHands();
+	if (Phase != EPhase::WaitingInput || Id > 1) return;
+	PlayersInfo[Id].PlayerHand = NewHand; TryResolveHands();
 }
 void AJankenGameState::SetPlayerAction(int32 Id,bool bAttack)
 {
-	if (Phase != EPhase::ActionSelect || !PlayersInfo.IsValidIndex(Id))
-	{
-		return;
-	}
-	PlayersInfo[Id].bPlayerAttack = bAttack;
-	PlayersInfo[Id].bPlayerDefend = !bAttack;
-	TryResolveActions();
+	if (Phase != EPhase::ActionSelect) return;
+	PlayersInfo[Id].bPlayerAttack = bAttack; PlayersInfo[Id].bPlayerDefend = !bAttack; TryResolveActions();
 }
 void AJankenGameState::EnterActionPhase()
 {
-	Phase = EPhase::ActionSelect;
-	OnPhaseChanged.Broadcast(Phase);
+	Phase = EPhase::HandResult; OnPhaseChanged.Broadcast(Phase);
 
-	const int32 ResultRaw = CalcResultRaw();
-	int32 Result = ApplyRulesToResult(ResultRaw);
+	/* ===== ここで両者の手を表示 ===== */
+	auto HandToString = [](EHand H)
+		{
+			switch (H)
+			{
+			case EHand::Rock:     return TEXT("Rock");
+			case EHand::Scissors: return TEXT("Scissors");
+			case EHand::Paper:    return TEXT("Paper");
+			default:              return TEXT("None");
+			}
+		};
 
-	if (Result == 0)
-	{
-		// Draw
-		// じゃんけんの結果が引き分けの場合、次のラウンドへ移行
-		Phase = EPhase::WaitingInput;
-		PlayersInfo[0].PlayerHand = PlayersInfo[1].PlayerHand = EHand::None;
-		OnPhaseChanged.Broadcast(Phase);
-		return;
-	}
-	AttackerId = (Result == 1) ? 0 : 1; // Player wins if Result is 1, otherwise Opponent wins
-	Phase = EPhase::ActionSelect;
-	OnPhaseChanged.Broadcast(Phase);
-	
-	for (URuleBase* Rule : ActiveRules)
-	{
-		Rule->OnEnterAction(this);
-	}
+	const FString Msg = FString::Printf(TEXT("You: %s   NPC: %s"),
+		HandToString(PlayersInfo[0].PlayerHand),
+		HandToString(PlayersInfo[1].PlayerHand));
+
+	UE_LOG(LogTemp, Log, TEXT("%s"), *Msg);                 // Output Log
+	if (GEngine)
+		GEngine->AddOnScreenDebugMessage(
+			42 /*Key*/, 3.f, FColor::Cyan, Msg);            // 画面左上 3 秒表示
+	/* ================================= */
+
+	int32 R = CalcResultRaw();   // -1:p1勝 0:あいこ 1:p0勝
+	if (R == 0) { Phase = EPhase::WaitingInput; PlayersInfo[0].PlayerHand = PlayersInfo[1].PlayerHand = EHand::None; OnPhaseChanged.Broadcast(Phase); return; }
+	AttackerId = (R == 1) ? 0 : 1;
+	Phase = EPhase::ActionSelect; OnPhaseChanged.Broadcast(Phase);
 }
 void AJankenGameState::NextRound()
 {
 	// 次のラウンドへ移行
 	//プレイヤーとルールの情報を初期化
 	PlayersInfo = { FPlayerRoundInfo{}, FPlayerRoundInfo{} };
-	ActiveRules.Empty();
 	AttackerId = -1;
 	Phase = EPhase::WaitingInput;
 	OnPhaseChanged.Broadcast(Phase);
@@ -81,8 +76,7 @@ int32 AJankenGameState::CalcResultRaw() const
 {
 	static const int32 T[3][3] = { {0,1,-1},{-1,0,1},{1,-1,0} };
 	int32 r = T[(int32)PlayersInfo[0].PlayerHand][(int32)PlayersInfo[1].PlayerHand];
-	if (PlayersInfo[0].bReverse) r *= -1;
-	if (PlayersInfo[1].bReverse) r *= -1;
+	for (auto* Rule : ActiveRules) r = Rule->ModifyJankenResult(r, 0);
 	return r;
 }
 int32 AJankenGameState::ApplyRulesToResult(int32 BaseResult) const
@@ -118,37 +112,12 @@ void AJankenGameState::TryResolveActions()
 	{
 		return;
 	}
-	int32 Winner = -1;
 
-	auto AttackSuccess = [&](int32 AtkId, int32 DefId)->bool
-		{
-			if (!PlayersInfo[AtkId].bPlayerAttack)
-			{
-				return false;
-			}
-			if (!PlayersInfo[DefId].bPlayerDefend)
-			{
-				return true;
-			}
-			return false;
-		};
-	if (AttackSuccess(AttackerId, 1 - AttackerId))
-	{
-		Winner = AttackerId;
-	}
-	else
-	{
-		Winner = 1 - AttackerId;
-	}
+	bool AttHit = PlayersInfo[AttackerId].bPlayerAttack && !PlayersInfo[1 - AttackerId].bPlayerDefend;
+	int32 Win = AttHit ? AttackerId : 1 - AttackerId;
 
-	for (URuleBase* Rule : ActiveRules)
-	{
-		Rule->PostResolve(this, Winner);
-	}
-	PlayersInfo[0].bPlayerWin = (Winner == 0);  PlayersInfo[1].bPlayerWin = (Winner == 1);
-
+	PlayersInfo[Win].bPlayerWin = true;
 	Phase = EPhase::Resolve;
-	OnRoundFinished.Broadcast(Winner);
 	OnPhaseChanged.Broadcast(Phase);
 
 	GetWorldTimerManager().SetTimer(CountdownTimerHandle, this, &AJankenGameState::NextRound, 2.f, false);

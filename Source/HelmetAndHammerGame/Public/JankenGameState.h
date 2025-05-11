@@ -9,7 +9,6 @@
 #include "JankenGameState.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnPhaseChanged, EPhase, NewPhase);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnRoundFinished, int32, WinnerId);
 
 UCLASS()
 class HELMETANDHAMMERGAME_API AJankenGameState : public AGameStateBase
@@ -40,7 +39,6 @@ public:
 
 	//ƒCƒxƒ“ƒg
 	UPROPERTY(BlueprintAssignable) FOnPhaseChanged OnPhaseChanged;
-	UPROPERTY(BlueprintAssignable) FOnRoundFinished OnRoundFinished;
 
 
 protected:

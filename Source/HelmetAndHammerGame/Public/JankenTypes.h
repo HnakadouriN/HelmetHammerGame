@@ -31,11 +31,7 @@ struct FPlayerRoundInfo
 
 	UPROPERTY(BlueprintReadOnly)
 	EHand PlayerHand = EHand::None;
-	UPROPERTY(BlueprintReadOnly)
-	EHand OpponentHand = EHand::None;
 
-	UPROPERTY(BlueprintReadOnly)
-	bool bReverse = false;
 	UPROPERTY(BlueprintReadOnly)
 	bool bPlayerAttack = false;
 	UPROPERTY(BlueprintReadOnly)

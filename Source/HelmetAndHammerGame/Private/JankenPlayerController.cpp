@@ -6,63 +6,49 @@
 #include "Rule_Reverse.h"
 
 
-int32 AJankenPlayerController::GetId() const
-{
-	return GetLocalPlayer()->GetControllerId();
-}
-
 void AJankenPlayerController::SetupInputComponent()
 {
 	Super::SetupInputComponent();
 
-	const FString Prefix = FString::Printf(TEXT("Player%d_"), GetId());
-	auto B = [this, &Prefix](const TCHAR* Name,auto Method)
-	{
-		InputComponent->BindAction(*FString(Prefix + Name), IE_Pressed, this, Method);
-	};
-
-	B(TEXT("Rock"), &AJankenPlayerController::OnHandRock);
-	B(TEXT("Paper"), &AJankenPlayerController::OnHandPaper);
-	B(TEXT("Scissors"), &AJankenPlayerController::OnHandScissors);
-	B(TEXT("Attack"), &AJankenPlayerController::OnActionAttack);
-	B(TEXT("Defend"), &AJankenPlayerController::OnActionDefend);
+	InputComponent->BindAction("Rock", IE_Pressed, this, &AJankenPlayerController::OnRock);
+	InputComponent->BindAction("Scissors", IE_Pressed, this, &AJankenPlayerController::OnScissors);
+	InputComponent->BindAction("Paper", IE_Pressed, this, &AJankenPlayerController::OnPaper);
+	InputComponent->BindAction("Attack", IE_Pressed, this, &AJankenPlayerController::OnAttack);
+	InputComponent->BindAction("Defend", IE_Pressed, this, &AJankenPlayerController::OnDefend);
 }
 
-void AJankenPlayerController::OnHandRock()
+
+void AJankenPlayerController::OnRock()
 {
+	UE_LOG(LogTemp, Log, TEXT("Input: ROCK"));
+	if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Green, TEXT("ROCK"));
 	SendHand(EHand::Rock);
 }
-void AJankenPlayerController::OnHandPaper()
+void AJankenPlayerController::OnScissors()
+{
+	UE_LOG(LogTemp, Log, TEXT("Input: SCISSORS"));
+	if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Green, TEXT("SCISSORS"));
+	SendHand(EHand::Scissors);
+}
+void AJankenPlayerController::OnPaper()
 {
 	SendHand(EHand::Paper);
 }
-void AJankenPlayerController::OnHandScissors()
-{
-	SendHand(EHand::Scissors);
-}
-void AJankenPlayerController::OnActionAttack()
+void AJankenPlayerController::OnAttack()
 {
 	SendAction(true);
 }
-void AJankenPlayerController::OnActionDefend()
+void AJankenPlayerController::OnDefend()
 {
 	SendAction(false);
 }
-
 void AJankenPlayerController::SendHand(EHand Hand)
 {
-	UE_LOG(LogTemp, Log, TEXT("PC%d SendHand %d"), GetId(), (int32)Hand);
-	if (AJankenGameState* GameState = GetWorld()->GetGameState<AJankenGameState>())
-	{
-		GameState->SetPlayerHand(GetId(), Hand);
-	}
+	if (auto* GS = GetWorld()->GetGameState<AJankenGameState>())
+		GS->SetPlayerHand(/*Idx=*/0, Hand);   // 人間は常にプレーヤー0
 }
-
-void AJankenPlayerController::SendAction(bool bAttack)
+void AJankenPlayerController::SendAction(bool bAtk)
 {
-	if (AJankenGameState* GameState = GetWorld()->GetGameState<AJankenGameState>())
-	{
-		GameState->SetPlayerAction(GetId(), bAttack);
-	}
+	if (auto* GS = GetWorld()->GetGameState<AJankenGameState>())
+		GS->SetPlayerAction(/*Idx=*/0, bAtk);
 }
-

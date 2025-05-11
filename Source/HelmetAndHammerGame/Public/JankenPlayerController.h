@@ -19,13 +19,12 @@ protected:
 	virtual void SetupInputComponent() override;
 	
 private:
-	int32 GetId() const;
-
-	void OnHandRock();
-	void OnHandPaper();
-	void OnHandScissors();
-	void OnActionAttack();
-	void OnActionDefend();
+	/* “ü—Íƒnƒ“ƒhƒ‰ */
+	void OnRock();
+	void OnScissors();
+	void OnPaper();
+	void OnAttack();
+	void OnDefend();
 
 	void SendHand(EHand Hand);
 	void SendAction(bool bAttack);
