@@ -26,9 +26,11 @@ public:
 	//ƒ‹[ƒ‹ü‚è‚ÌŠÖ”
 	void AddRule(URuleBase* Rule)
 	{
+		ActiveRules.Add(Rule);
 	}
 	void ClearRule()
 	{
+		ActiveRules.Empty();
 	}
 
 	//ƒ‹[ƒ‹‚Ìİ’è

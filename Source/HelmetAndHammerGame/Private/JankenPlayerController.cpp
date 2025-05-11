@@ -36,15 +36,15 @@ void AJankenPlayerController::ToggleReverse()
 {
 	if (AJankenGameState* GameState = GetWorld()->GetGameState<AJankenGameState>())
 	{
-		bool bAlreadyReversed = GameState->RoundResult.bReverse;
+		//bool bAlreadyReversed = GameState->RoundResult.bReverse;
 		if (!bActorLabelEditable)
 		{
 			URule_Reverse* NewRule = NewObject<URule_Reverse>();
-			GameState->SetRule(NewRule);
+			//GameState->SetRule(NewRule);
 		}
 		else
 		{
-			GameState->SetRule(nullptr);
+			//GameState->SetRule(nullptr);
 		}
 	}
 }

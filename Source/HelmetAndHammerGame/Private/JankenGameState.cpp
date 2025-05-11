@@ -26,17 +26,6 @@ void AJankenGameState::SetPlayerAction(bool bAttack)
 {
 	PlayersInfo[0].bPlayerAttack = bAttack;
 }
-void AJankenGameState::AddRule(URuleBase* Rule)
-{
-	if (Rule)
-	{
-		ActiveRules.Add(Rule);
-	}
-}
-void AJankenGameState::ClearRule()
-{
-	ActiveRules.Empty();
-}
 void AJankenGameState::TryResolveHands()
 {
 	// ‚¶‚á‚ñ‚¯‚ñ‚ÌŽè‚ðŒˆ’è
