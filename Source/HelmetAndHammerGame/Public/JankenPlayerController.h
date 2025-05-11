@@ -19,14 +19,13 @@ protected:
 	virtual void SetupInputComponent() override;
 	
 private:
-	void ChooseRock() { SendHand(EHand::Rock); }
-	void ChoosePaper() { SendHand(EHand::Paper); }
-	void ChooseScissors() { SendHand(EHand::Scissors); }
+	int32 GetId() const;
 
-	void PressAttack() { SendAction(true); }
-	void PressDifend() { SendAction(false); }
-
-	void ToggleReverse();
+	void OnHandRock();
+	void OnHandPaper();
+	void OnHandScissors();
+	void OnActionAttack();
+	void OnActionDefend();
 
 	void SendHand(EHand Hand);
 	void SendAction(bool bAttack);

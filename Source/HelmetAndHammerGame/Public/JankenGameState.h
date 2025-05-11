@@ -20,8 +20,8 @@ public:
 	AJankenGameState();
 
 	//入力周りの関数
-	void SetPlayerHand(EHand NewHand);
-	void SetPlayerAction(bool bAttack);
+	void SetPlayerHand(int32 Id,EHand NewHand);
+	void SetPlayerAction(int32 Id,bool bAttack);
 
 	//ルール周りの関数
 	void AddRule(URuleBase* Rule)
@@ -58,6 +58,6 @@ private:
 	FTimerHandle CountdownTimerHandle;
 
 	/*デバッグ用*/
-	//UFUNCTION()
-	//void HandlePhaseChanged(EPhase NewPhase);
+	UFUNCTION()
+	void HandlePhaseChanged(EPhase NewPhase);
 };

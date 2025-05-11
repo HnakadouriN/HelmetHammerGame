@@ -2,6 +2,7 @@
 
 
 #include "JankenGameState.h"
+#include "Rule_GuardBreak.h"
 #include "TimerManager.h"
 #include "Engine/Engine.h"
 
@@ -16,80 +17,73 @@ void AJankenGameState::BeginPlay()
 
 	PlayersInfo.Init(FPlayerRoundInfo{}, 2);
 
+	OnPhaseChanged.AddDynamic(this, &AJankenGameState::HandlePhaseChanged);
+
 	OnPhaseChanged.Broadcast(Phase);
 }
-void AJankenGameState::SetPlayerHand(EHand NewHand)
+void AJankenGameState::SetPlayerHand(int32 Id,EHand NewHand)
 {
-	PlayersInfo[0].PlayerHand = NewHand;
-}
-void AJankenGameState::SetPlayerAction(bool bAttack)
-{
-	PlayersInfo[0].bPlayerAttack = bAttack;
-}
-void AJankenGameState::TryResolveHands()
-{
-	// じゃんけんの手を決定
-	PlayersInfo[0].PlayerHand = PlayersInfo[0].PlayerHand;
-	PlayersInfo[1].OpponentHand = PlayersInfo[1].OpponentHand;
-	// ルールを適用
-	int32 Result = CalcResultRaw();
-	Result = ApplyRulesToResult(Result);
-	// 勝敗を決定
-	if (Result == 0)
+	if (Phase != EPhase::WaitingInput || !PlayersInfo.IsValidIndex(Id))
 	{
-		OnRoundFinished.Broadcast(-1);
+		return;
 	}
-	else
+	PlayersInfo[Id].PlayerHand = NewHand;
+	TryResolveHands();
+}
+void AJankenGameState::SetPlayerAction(int32 Id,bool bAttack)
+{
+	if (Phase != EPhase::ActionSelect || !PlayersInfo.IsValidIndex(Id))
 	{
-		OnRoundFinished.Broadcast(Result);
+		return;
 	}
+	PlayersInfo[Id].bPlayerAttack = bAttack;
+	PlayersInfo[Id].bPlayerDefend = !bAttack;
+	TryResolveActions();
 }
 void AJankenGameState::EnterActionPhase()
 {
 	Phase = EPhase::ActionSelect;
 	OnPhaseChanged.Broadcast(Phase);
-}
-void AJankenGameState::TryResolveActions()
-{
-	// アクションを決定
-	PlayersInfo[0].bPlayerDefend = PlayersInfo[0].bPlayerDefend;
-	PlayersInfo[1].bPlayerAttack = PlayersInfo[1].bPlayerAttack;
-	// ルールを適用
-	int32 Result = CalcResultRaw();
-	Result = ApplyRulesToResult(Result);
-	// 勝敗を決定
+
+	const int32 ResultRaw = CalcResultRaw();
+	int32 Result = ApplyRulesToResult(ResultRaw);
+
 	if (Result == 0)
 	{
-		OnRoundFinished.Broadcast(-1);
+		// Draw
+		// じゃんけんの結果が引き分けの場合、次のラウンドへ移行
+		Phase = EPhase::WaitingInput;
+		PlayersInfo[0].PlayerHand = PlayersInfo[1].PlayerHand = EHand::None;
+		OnPhaseChanged.Broadcast(Phase);
+		return;
 	}
-	else
+	AttackerId = (Result == 1) ? 0 : 1; // Player wins if Result is 1, otherwise Opponent wins
+	Phase = EPhase::ActionSelect;
+	OnPhaseChanged.Broadcast(Phase);
+	
+	for (URuleBase* Rule : ActiveRules)
 	{
-		OnRoundFinished.Broadcast(Result);
+		Rule->OnEnterAction(this);
 	}
 }
 void AJankenGameState::NextRound()
 {
-	// 次のラウンドへ
+	// 次のラウンドへ移行
+	//プレイヤーとルールの情報を初期化
+	PlayersInfo = { FPlayerRoundInfo{}, FPlayerRoundInfo{} };
+	ActiveRules.Empty();
+	AttackerId = -1;
 	Phase = EPhase::WaitingInput;
 	OnPhaseChanged.Broadcast(Phase);
+	
 }
 int32 AJankenGameState::CalcResultRaw() const
 {
-	// じゃんけんの手を比較
-	if (PlayersInfo[0].PlayerHand == PlayersInfo[1].OpponentHand)
-	{
-		return 0; // Draw
-	}
-	else if ((PlayersInfo[0].PlayerHand == EHand::Rock && PlayersInfo[1].OpponentHand == EHand::Scissors) ||
-		(PlayersInfo[0].PlayerHand == EHand::Paper && PlayersInfo[1].OpponentHand == EHand::Rock) ||
-		(PlayersInfo[0].PlayerHand == EHand::Scissors && PlayersInfo[1].OpponentHand == EHand::Paper))
-	{
-		return 1; // Player wins
-	}
-	else
-	{
-		return 2; // Opponent wins
-	}
+	static const int32 T[3][3] = { {0,1,-1},{-1,0,1},{1,-1,0} };
+	int32 r = T[(int32)PlayersInfo[0].PlayerHand][(int32)PlayersInfo[1].PlayerHand];
+	if (PlayersInfo[0].bReverse) r *= -1;
+	if (PlayersInfo[1].bReverse) r *= -1;
+	return r;
 }
 int32 AJankenGameState::ApplyRulesToResult(int32 BaseResult) const
 {
@@ -100,28 +94,90 @@ int32 AJankenGameState::ApplyRulesToResult(int32 BaseResult) const
 	}
 	return Result;
 }
+void AJankenGameState::TryResolveHands()
+{
+	if (PlayersInfo[0].PlayerHand == EHand::None || PlayersInfo[1].PlayerHand == EHand::None)
+	{
+		return;
+	}
+	Phase = EPhase::CountingDown;
+	OnPhaseChanged.Broadcast(Phase);
 
-//void AJankenGameState::HandlePhaseChanged(EPhase NewPhase)
-//{
-//	/* 1) コンソールログ */
-//	UE_LOG(LogTemp, Log, TEXT("[Phase] %s  Hand=%s  Opp=%s  Rev=%d  Win=%d"),
-//		*UEnum::GetValueAsString(NewPhase),
-//		*UEnum::GetValueAsString(RoundResult.PlayerHand),
-//		*UEnum::GetValueAsString(RoundResult.OpponentHand),
-//		RoundResult.bReverse,
-//		RoundResult.bPlayerWin);
-//
-//	/* 2) 画面左上に 4 秒表示 */
-//	if (GEngine)
-//	{
-//		FString Msg = FString::Printf(TEXT("Phase:%s  Reverse:%s"),
-//			*UEnum::GetValueAsString(NewPhase),
-//			RoundResult.bReverse ? TEXT("ON") : TEXT("OFF"));
-//
-//		GEngine->AddOnScreenDebugMessage(
-//			/*Key*/   1,          // 同じキーなら上書き
-//			/*Time*/  4.f,
-//			/*Color*/ FColor::Yellow,
-//			Msg);
-//	}
-//}
+	GetWorldTimerManager().SetTimer(
+		CountdownTimerHandle,
+		this,
+		&AJankenGameState::EnterActionPhase,
+		5.0f, // 5秒後に
+		false // 1回だけ
+	);
+}
+void AJankenGameState::TryResolveActions()
+{
+	if (!(PlayersInfo[0].bPlayerAttack||PlayersInfo[1].bPlayerAttack) ||
+	    !(PlayersInfo[1].bPlayerAttack||PlayersInfo[1].bPlayerDefend))
+	{
+		return;
+	}
+	int32 Winner = -1;
+
+	auto AttackSuccess = [&](int32 AtkId, int32 DefId)->bool
+		{
+			if (!PlayersInfo[AtkId].bPlayerAttack)
+			{
+				return false;
+			}
+			if (!PlayersInfo[DefId].bPlayerDefend)
+			{
+				return true;
+			}
+			return false;
+		};
+	if (AttackSuccess(AttackerId, 1 - AttackerId))
+	{
+		Winner = AttackerId;
+	}
+	else
+	{
+		Winner = 1 - AttackerId;
+	}
+
+	for (URuleBase* Rule : ActiveRules)
+	{
+		Rule->PostResolve(this, Winner);
+	}
+	PlayersInfo[0].bPlayerWin = (Winner == 0);  PlayersInfo[1].bPlayerWin = (Winner == 1);
+
+	Phase = EPhase::Resolve;
+	OnRoundFinished.Broadcast(Winner);
+	OnPhaseChanged.Broadcast(Phase);
+
+	GetWorldTimerManager().SetTimer(CountdownTimerHandle, this, &AJankenGameState::NextRound, 2.f, false);
+}
+
+
+void URule_GuardBreak::PostResolve(AJankenGameState* GS, int32 WinnerId)
+{
+	if (!GS) return;
+	const bool bDefenderWon = (WinnerId != -1 && WinnerId != GS->AttackerId);
+	if (bDefenderWon && FMath::FRand() < 0.5f)      // 50% で破壊
+		WinnerId = GS->AttackerId;
+}
+
+void AJankenGameState::HandlePhaseChanged(EPhase NewPhase)
+{
+	UE_LOG(LogTemp, Log, TEXT("[Phase] %s  P0=%s  P1=%s  Attacker=%d"),
+		*UEnum::GetValueAsString(NewPhase),
+		*UEnum::GetValueAsString(PlayersInfo[0].PlayerHand),
+		*UEnum::GetValueAsString(PlayersInfo[1].PlayerHand),
+		AttackerId);
+
+	/* 2) 画面左上 */
+	if (GEngine)
+	{
+		GEngine->AddOnScreenDebugMessage(
+			/*Key*/   1,               /* 上書き */
+			/*Time*/  4.f,
+			/*Color*/ FColor::Yellow,
+			FString::Printf(TEXT("Phase: %s"), *UEnum::GetValueAsString(NewPhase)));
+	}
+}

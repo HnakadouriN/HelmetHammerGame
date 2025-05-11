@@ -5,22 +5,56 @@
 #include "JankenGameState.h"
 #include "Rule_Reverse.h"
 
+
+int32 AJankenPlayerController::GetId() const
+{
+	return GetLocalPlayer()->GetControllerId();
+}
+
 void AJankenPlayerController::SetupInputComponent()
 {
 	Super::SetupInputComponent();
-	InputComponent->BindAction("Rock", IE_Pressed, this, &AJankenPlayerController::ChooseRock);
-	InputComponent->BindAction("Paper", IE_Pressed, this, &AJankenPlayerController::ChoosePaper);
-	InputComponent->BindAction("Scissors", IE_Pressed, this, &AJankenPlayerController::ChooseScissors);
-	InputComponent->BindAction("Attack", IE_Pressed, this, &AJankenPlayerController::PressAttack);
-	InputComponent->BindAction("Defend", IE_Pressed, this, &AJankenPlayerController::PressDifend);
-	InputComponent->BindAction("Reverse", IE_Pressed, this, &AJankenPlayerController::ToggleReverse);
+
+	const FString Prefix = FString::Printf(TEXT("Player%d_"), GetId());
+	auto B = [this, &Prefix](const TCHAR* Name,auto Method)
+	{
+		InputComponent->BindAction(*FString(Prefix + Name), IE_Pressed, this, Method);
+	};
+
+	B(TEXT("Rock"), &AJankenPlayerController::OnHandRock);
+	B(TEXT("Paper"), &AJankenPlayerController::OnHandPaper);
+	B(TEXT("Scissors"), &AJankenPlayerController::OnHandScissors);
+	B(TEXT("Attack"), &AJankenPlayerController::OnActionAttack);
+	B(TEXT("Defend"), &AJankenPlayerController::OnActionDefend);
+}
+
+void AJankenPlayerController::OnHandRock()
+{
+	SendHand(EHand::Rock);
+}
+void AJankenPlayerController::OnHandPaper()
+{
+	SendHand(EHand::Paper);
+}
+void AJankenPlayerController::OnHandScissors()
+{
+	SendHand(EHand::Scissors);
+}
+void AJankenPlayerController::OnActionAttack()
+{
+	SendAction(true);
+}
+void AJankenPlayerController::OnActionDefend()
+{
+	SendAction(false);
 }
 
 void AJankenPlayerController::SendHand(EHand Hand)
 {
+	UE_LOG(LogTemp, Log, TEXT("PC%d SendHand %d"), GetId(), (int32)Hand);
 	if (AJankenGameState* GameState = GetWorld()->GetGameState<AJankenGameState>())
 	{
-		GameState->SetPlayerHand(Hand);
+		GameState->SetPlayerHand(GetId(), Hand);
 	}
 }
 
@@ -28,23 +62,7 @@ void AJankenPlayerController::SendAction(bool bAttack)
 {
 	if (AJankenGameState* GameState = GetWorld()->GetGameState<AJankenGameState>())
 	{
-		GameState->SetPlayerAction(bAttack);
+		GameState->SetPlayerAction(GetId(), bAttack);
 	}
 }
 
-void AJankenPlayerController::ToggleReverse()
-{
-	if (AJankenGameState* GameState = GetWorld()->GetGameState<AJankenGameState>())
-	{
-		//bool bAlreadyReversed = GameState->RoundResult.bReverse;
-		if (!bActorLabelEditable)
-		{
-			URule_Reverse* NewRule = NewObject<URule_Reverse>();
-			//GameState->SetRule(NewRule);
-		}
-		else
-		{
-			//GameState->SetRule(nullptr);
-		}
-	}
-}
