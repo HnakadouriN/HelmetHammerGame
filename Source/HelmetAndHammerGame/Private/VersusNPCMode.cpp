@@ -6,11 +6,12 @@
 #include "JankenPlayerController.h"
 #include "JankenNPCController.h"
 #include "JankenGameState.h"
+#include "JankenHUD.h"
 
 AVersusNPCMode::AVersusNPCMode()
 {
 	DefaultPawnClass = nullptr; // プレイヤーは自動生成しない
-    HUDClass = nullptr;
+	HUDClass = AJankenHUD::StaticClass(); // HUDを使用する
     PlayerControllerClass = AJankenPlayerController::StaticClass(); // P0
     GameStateClass = AJankenGameState::StaticClass();
 }

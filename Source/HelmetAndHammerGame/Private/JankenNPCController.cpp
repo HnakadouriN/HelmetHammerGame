@@ -16,7 +16,7 @@ void AJankenNPCController::BeginPlay()
 void AJankenNPCController::Tick(float)
 {
     AJankenGameState* GS = GetGS();
-    if (!GS || GS->PlayersInfo.Num() < 2) return;
+    if (!GS || GS->Players.Num() < 2) return;
 
     switch (GS->Phase)
     {
@@ -30,7 +30,7 @@ void AJankenNPCController::Tick(float)
 /* ---------- 手を出すフェーズ ---------- */
 void AJankenNPCController::HandleWaitingInput(AJankenGameState* GS)
 {
-    if (GS->PlayersInfo[PlayerIndex].PlayerHand != EHand::None) return;
+    if (GS->Players[PlayerIndex].Hand != EHand::None) return;
     if (GetWorld()->GetTimerManager().IsTimerActive(HandTimer)) return;
 
     Delay(HandDelay, [this, GS]()
@@ -43,8 +43,8 @@ void AJankenNPCController::HandleWaitingInput(AJankenGameState* GS)
 /* ---------- 攻防を押すフェーズ ---------- */
 void AJankenNPCController::HandleActionSelect(AJankenGameState* GS)
 {
-    const auto& P = GS->PlayersInfo[PlayerIndex];
-    if (P.bPlayerAttack || P.bPlayerDefend) return;
+    const auto& P = GS->Players[PlayerIndex];
+    if (P.bAttack || P.bDefend) return;
     if (GetWorld()->GetTimerManager().IsTimerActive(ActionTimer)) return;
 
     Delay(ActionDelay, [this, GS]()

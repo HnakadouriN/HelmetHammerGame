@@ -30,14 +30,14 @@ struct FPlayerRoundInfo
 	GENERATED_BODY()
 
 	UPROPERTY(BlueprintReadOnly)
-	EHand PlayerHand = EHand::None;
+	EHand Hand = EHand::None;
 
 	UPROPERTY(BlueprintReadOnly)
-	bool bPlayerAttack = false;
+	bool bAttack = false;
 	UPROPERTY(BlueprintReadOnly)
-	bool bPlayerDefend = false;
+	bool bDefend = false;
 	UPROPERTY(BlueprintReadOnly)
-	bool bPlayerWin = false;
+	bool bWin = false;
 
 	float AttackTime = 0.0f;
 };

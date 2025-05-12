@@ -33,7 +33,7 @@ public:
 	}
 
 	//ƒ‹[ƒ‹‚Ìİ’è
-	UPROPERTY(BlueprintReadOnly) TArray<FPlayerRoundInfo> PlayersInfo;
+	UPROPERTY(BlueprintReadOnly) TArray<FPlayerRoundInfo> Players;
 	UPROPERTY(BlueprintReadOnly) EPhase Phase = EPhase::WaitingInput;
 	UPROPERTY(BlueprintReadOnly) int32 AttackerId = -1;
 
