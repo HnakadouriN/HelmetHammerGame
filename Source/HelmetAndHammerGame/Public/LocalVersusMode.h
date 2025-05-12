@@ -3,20 +3,17 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/GameModeBase.h"
+#include "JankenBaseMode.h"
 #include "LocalVersusMode.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class HELMETANDHAMMERGAME_API ALocalVersusMode : public AGameModeBase
+class HELMETANDHAMMERGAME_API ALocalVersusMode : public AJankenBaseMode
 {
 	GENERATED_BODY()
 
-public:
-	ALocalVersusMode();
-	
 protected:
 	virtual void BeginPlay() override;
 };

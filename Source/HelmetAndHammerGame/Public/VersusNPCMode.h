@@ -3,19 +3,15 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/GameModeBase.h"
+#include "JankenBaseMode.h"
 #include "VersusNPCMode.generated.h"
 
-/**
- * 
- */
+
 UCLASS()
-class HELMETANDHAMMERGAME_API AVersusNPCMode : public AGameModeBase
+class HELMETANDHAMMERGAME_API AVersusNPCMode : public AJankenBaseMode
 {
 	GENERATED_BODY()
 
-public:
-	AVersusNPCMode();
 protected:
 	virtual void BeginPlay() override;
 };

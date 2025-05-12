@@ -10,6 +10,9 @@ void AJankenPlayerController::SetupInputComponent()
 {
 	Super::SetupInputComponent();
 
+	const int32 ControllerId = GetLocalPlayer()->GetControllerId();
+	UE_LOG(LogTemp, Log, TEXT("PlayerController [%d] セットアップ"), ControllerId);
+
 	InputComponent->BindAction("Rock", IE_Pressed, this, &AJankenPlayerController::OnRock);
 	InputComponent->BindAction("Scissors", IE_Pressed, this, &AJankenPlayerController::OnScissors);
 	InputComponent->BindAction("Paper", IE_Pressed, this, &AJankenPlayerController::OnPaper);
@@ -44,11 +47,13 @@ void AJankenPlayerController::OnDefend()
 }
 void AJankenPlayerController::SendHand(EHand Hand)
 {
-	if (auto* GS = GetWorld()->GetGameState<AJankenGameState>())
-		GS->SetPlayerHand(/*Idx=*/0, Hand);   // 人間は常にプレーヤー0
+	AJankenGameState* GS = GetWorld()->GetGameState<AJankenGameState>();
+	int32 ControllerId = GetLocalPlayer()->GetControllerId();
+	if (GS) GS->SetPlayerHand(ControllerId, Hand);
 }
 void AJankenPlayerController::SendAction(bool bAtk)
 {
-	if (auto* GS = GetWorld()->GetGameState<AJankenGameState>())
-		GS->SetPlayerAction(/*Idx=*/0, bAtk);
+	AJankenGameState* GS = GetWorld()->GetGameState<AJankenGameState>();
+	int32 ControllerId = GetLocalPlayer()->GetControllerId();
+	if (GS) GS->SetPlayerAction(ControllerId, bAtk);
 }

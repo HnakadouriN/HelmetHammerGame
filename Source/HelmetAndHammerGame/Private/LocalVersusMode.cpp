@@ -2,25 +2,26 @@
 
 
 #include "LocalVersusMode.h"
-#include "Engine/LocalPlayer.h"
 #include "Kismet/GameplayStatics.h"
-#include "JankenGameState.h"
 #include "JankenPlayerController.h"
 
-ALocalVersusMode::ALocalVersusMode() {
-	DefaultPawnClass = nullptr;
-	HUDClass = nullptr;
-	PlayerControllerClass = AJankenPlayerController::StaticClass();
-	GameStateClass = AJankenGameState::StaticClass();
-}
 
 void ALocalVersusMode::BeginPlay()
 {
-	Super::BeginPlay();
+    Super::BeginPlay();
 
-	auto* LocalPlayer = UGameplayStatics::CreatePlayer(GetWorld(), 1, true);
-	if (LocalPlayer == nullptr) {
-		UE_LOG(LogTemp, Warning, TEXT("Failed to create LocalPlayer"));
-	}
+    FString Err;
+    ULocalPlayer* LP = GetGameInstance()->CreateLocalPlayer(INDEX_NONE, Err, true);
+
+    if (!LP || !LP->PlayerController)
+    {
+        UE_LOG(LogTemp, Error, TEXT("2P¶¬Ž¸”s: %s"), *Err);
+        return;
+    }
+
+    LP->PlayerController->EnableInput(LP->PlayerController);
+
+    UE_LOG(LogTemp, Log, TEXT("2P¶¬Š®—¹: CtrlId=%d, PC=%s"),
+        LP->GetControllerId(),
+        *LP->PlayerController->GetName());
 }
-
