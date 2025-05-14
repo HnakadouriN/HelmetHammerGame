@@ -1,6 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
-
 #include "JankenGameState.h"
 #include "Rule_GuardBreak.h"
 #include "TimerManager.h"
@@ -32,6 +29,10 @@ void AJankenGameState::SetPlayerHand(int32 Id,EHand NewHand)
 void AJankenGameState::SetPlayerAction(int32 Id,bool bAttack)
 {
 	if (Phase != EPhase::ActionSelect || Id > 1) return;
+
+	// 攻撃側しか Attack を受け付けず、防御側しか Defend を受け付けない
+	const bool bIsAttacker = (Id == AttackerId);
+	if (bAttack != bIsAttacker)  return;   // 不正入力は握りつぶす
 
 	FPlayerRoundInfo& P = Players[Id];
 	if (P.bAttack || P.bDefend) return;            // 2 度押し防止
@@ -88,14 +89,38 @@ int32 AJankenGameState::ApplyRulesToResult(int32 BaseResult) const
 }
 void AJankenGameState::TryResolveHands()
 {
-	if (Players[0].Hand == EHand::None || Players[1].Hand == EHand::None) return;
+	if (Players[0].Hand != EHand::None && Players[1].Hand != EHand::None)
+	{
+		Phase = EPhase::CountingDown;
+		CountdownSec = 5;
+		OnPhaseChanged.Broadcast(Phase);
+		OnCountdownTick.Broadcast();            // 初回 5 を送る
 
-	Phase = EPhase::CountingDown;
-	OnPhaseChanged.Broadcast(Phase);
+		GetWorldTimerManager().SetTimer(
+			CountdownTimerHandle, this, &AJankenGameState::TickCountdown, 1.f, true);
+	}
 
-	/* 5 秒後に手を公開し攻防フェーズへ */
-	GetWorldTimerManager().SetTimer(
-		CountdownTimerHandle, this, &AJankenGameState::EnterActionPhase, 5.f, false);
+	//if (Players[0].Hand == EHand::None || Players[1].Hand == EHand::None) return;
+
+	//Phase = EPhase::CountingDown;
+	//OnPhaseChanged.Broadcast(Phase);
+
+	///* 5 秒後に手を公開し攻防フェーズへ */
+	//GetWorldTimerManager().SetTimer(
+	//	CountdownTimerHandle, this, &AJankenGameState::EnterActionPhase, 5.f, false);
+}
+void AJankenGameState::TickCountdown()
+{
+	CountdownSec--;
+	OnCountdownTick.Broadcast();      // HUD に「残り◯秒」を通知
+
+	if (CountdownSec <= 0)
+	{
+		GetWorldTimerManager().ClearTimer(CountdownTimerHandle);
+
+		// 既存の処理：手札を公開して攻防フェーズへ
+		EnterActionPhase();
+	}
 }
 void AJankenGameState::TryResolveActions()
 {
@@ -113,7 +138,7 @@ void AJankenGameState::TryResolveActions()
 	else if (AttackerOK && DefenderOK)       // 早押し勝負
 		Winner = (Players[AttackerId].AttackTime < Players[DefenderId].AttackTime)
 		? AttackerId : DefenderId;
-	else                                     Winner = DefenderId;        // 両ミス → 守備側
+	else                                     Winner = AttackerId;        // 両ミス → 守備側
 
 	Players[Winner].bWin = true;
 	Phase = EPhase::Resolve;

@@ -1,5 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
@@ -9,6 +7,7 @@
 #include "JankenGameState.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnPhaseChanged, EPhase, NewPhase);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnCountdownTick);
 
 UCLASS()
 class HELMETANDHAMMERGAME_API AJankenGameState : public AGameStateBase
@@ -37,8 +36,12 @@ public:
 	UPROPERTY(BlueprintReadOnly) EPhase Phase = EPhase::WaitingInput;
 	UPROPERTY(BlueprintReadOnly) int32 AttackerId = -1;
 
+	UPROPERTY(BlueprintReadOnly)
+	int32 CountdownSec = 0;
+
 	//ƒCƒxƒ“ƒg
 	UPROPERTY(BlueprintAssignable) FOnPhaseChanged OnPhaseChanged;
+	UPROPERTY(BlueprintAssignable) FOnCountdownTick OnCountdownTick;
 
 
 protected:
@@ -51,6 +54,7 @@ private:
 	void NextRound();
 	int32 CalcResultRaw() const;
 	int32 ApplyRulesToResult(int32) const;
+	void TickCountdown();
 
 	TArray<URuleBase*> ActiveRules;
 	FTimerHandle CountdownTimerHandle;

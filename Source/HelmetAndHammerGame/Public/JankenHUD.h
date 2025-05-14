@@ -1,5 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
@@ -34,6 +32,9 @@ private:
 	class UImage* P1Image = nullptr;
 	class UTextBlock* WinnerText = nullptr;
 
+	UPROPERTY() UTextBlock* CountText = nullptr;
+
 	UFUNCTION() void OnPhaseChanged(EPhase NewPhase);
+	UFUNCTION() void HandleCountdown();
 	UTexture2D* HandToTexture(EHand H) const;
 };

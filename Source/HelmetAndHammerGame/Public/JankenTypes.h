@@ -11,6 +11,14 @@ enum class EHand:uint8
 	None
 };
 
+UENUM(BlueprintType)
+enum class EAction :uint8
+{
+	None,
+	Attack,
+	Defend
+};
+
 //‚¶‚á‚ñ‚¯‚ñ‚Ìƒ‹[ƒ‹‚Ìí—Ş
 UENUM(BlueprintType)
 enum class EPhase :uint8
@@ -31,6 +39,7 @@ struct FPlayerRoundInfo
 
 	UPROPERTY(BlueprintReadOnly)
 	EHand Hand = EHand::None;
+	EAction Action = EAction::None;
 
 	UPROPERTY(BlueprintReadOnly)
 	bool bAttack = false;

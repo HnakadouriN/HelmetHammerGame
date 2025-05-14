@@ -1,6 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
-
 #include "JankenHUD.h"
 #include "Blueprint/UserWidget.h"
 #include "Components/Image.h"
@@ -23,12 +20,35 @@ void AJankenHUD::BeginPlay()
             P0Image = Cast<UImage>(RoundWidget->GetWidgetFromName(TEXT("Image_P0Hand")));
             P1Image = Cast<UImage>(RoundWidget->GetWidgetFromName(TEXT("Image_P1Hand")));
             WinnerText = Cast<UTextBlock>(RoundWidget->GetWidgetFromName(TEXT("Text_Winner")));
+            CountText = Cast<UTextBlock>(RoundWidget->GetWidgetFromName(TEXT("TXT_Count")));
+            if (CountText)  CountText->SetVisibility(ESlateVisibility::Hidden);
         }
     }
 
     /* ------- GameState のイベント購読 ------- */
     if (auto* GS = GetWorld()->GetGameState<AJankenGameState>())
+    {
         GS->OnPhaseChanged.AddDynamic(this, &AJankenHUD::OnPhaseChanged);
+
+        /* CountdownTick は C++ delegate なので手動バインド */
+        GS->OnCountdownTick.AddDynamic(this, &AJankenHUD::HandleCountdown);
+    }
+}
+
+void AJankenHUD::HandleCountdown()
+{
+    AJankenGameState* GS = GetWorld()->GetGameState<AJankenGameState>();
+    if (!GS || !CountText) return;
+
+    if (GS->CountdownSec > 0)
+    {
+        CountText->SetVisibility(ESlateVisibility::HitTestInvisible);
+        CountText->SetText(FText::AsNumber(GS->CountdownSec));
+    }
+    else
+    {
+        CountText->SetVisibility(ESlateVisibility::Hidden);
+    }
 }
 
 /* ------- フェーズごとに UI 更新 ------- */
@@ -36,6 +56,11 @@ void AJankenHUD::OnPhaseChanged(EPhase NewPhase)
 {
     AJankenGameState* GS = GetWorld()->GetGameState<AJankenGameState>();
     if (!GS || !RoundWidget) return;
+
+    if (NewPhase == EPhase::CountingDown)
+    {
+        HandleCountdown();            // ★ここを追加
+    }
 
     switch (NewPhase)
     {

@@ -1,5 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
@@ -10,10 +8,12 @@
  * 
  */
 UCLASS()
-class HELMETANDHAMMERGAME_API ALocalVersusMode : public AJankenBaseMode
+class ALocalVersusMode : public AJankenBaseMode   // Å©ã§í äÓíÍÇåpè≥
 {
-	GENERATED_BODY()
-
+    GENERATED_BODY()
 protected:
-	virtual void BeginPlay() override;
+    virtual void BeginPlay() override;
+    virtual void PreLogin(const FString& Options, const FString& Address,
+        const FUniqueNetIdRepl& UniqueId, FString& ErrorMsg) override;
+    virtual AActor* ChoosePlayerStart_Implementation(AController* Player) override;
 };

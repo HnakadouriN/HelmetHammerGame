@@ -1,6 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
-
 #include "JankenPlayerController.h"
 #include "JankenGameState.h"
 #include "Rule_Reverse.h"
