@@ -1,7 +1,7 @@
-#pragma once
+﻿#pragma once
 #include "JankenTypes.generated.h"
 
-//����񂯂�̎�̎��
+//じゃんけんの手の種類
 UENUM(BlueprintType)
 enum class EHand:uint8
 {
@@ -19,20 +19,20 @@ enum class EAction :uint8
 	Defend
 };
 
-//����񂯂�̃��[���̎��
+//じゃんけんのルールの種類
 UENUM(BlueprintType)
 enum class EPhase :uint8
 {
-	RuleSelect UMETA(DisplayName = "RuleSelect"),
-	WaitingInput UMETA(DisplayName = "SelectHand"),
-	CountingDown UMETA(DisplayName = "CountDown"),
-	HandResult UMETA(DisplayName = "Result"),
-	ActionSelect UMETA(DisplayName = "ActionSelect"),
-	Resolve UMETA(DisplayName = "Battle!!"),
+	RuleSelect UMETA(DisplayName = "ルール選択中"),
+	WaitingInput UMETA(DisplayName = "出す手を選択してください"),
+	CountingDown UMETA(DisplayName = "カウントダウン"),
+	HandResult UMETA(DisplayName = "結果表示"),
+	ActionSelect UMETA(DisplayName = "攻防選択中"),
+	Resolve UMETA(DisplayName = "リザルト"),
 	Finished UMETA(DisplayName = "")
 };
 
-//1�v���[���[���̃��E���h���
+//1プレーヤー分のラウンド情報
 USTRUCT(BlueprintType)
 struct FPlayerRoundInfo
 {
