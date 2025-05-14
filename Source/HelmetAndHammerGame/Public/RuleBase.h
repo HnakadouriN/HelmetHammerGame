@@ -14,11 +14,11 @@ class HELMETANDHAMMERGAME_API URuleBase : public UObject
 	GENERATED_BODY()
 	
 public:
-    virtual void   PreHand(class AJankenGameState* GS) {}
-    //勝敗の補正
-    virtual int32  ModifyJankenResult(int32 BaseResult,int32) const { return BaseResult; }
-	//アクション選択時の補正
-    virtual void   OnEnterAction(class AJankenGameState* GS) {}
-	//アクション解決時の補正
-    virtual void   PostResolve(class AJankenGameState* GS,int32) {}
+    /** 勝敗数値を弄る (-1=P0勝,1=P1勝,0=Draw) */
+    UFUNCTION(BlueprintNativeEvent)
+    int32 ModifyJankenResult(int32 BaseResult, int32 RoundCount) const;
+
+    /** ★追加: 攻防判定に介入できるフック */
+    UFUNCTION(BlueprintNativeEvent)
+    void ModifyAttack(bool& bAttackerOK, bool& bDefenderOK) const;
 };

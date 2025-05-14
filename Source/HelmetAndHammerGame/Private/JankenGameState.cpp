@@ -89,6 +89,12 @@ int32 AJankenGameState::ApplyRulesToResult(int32 BaseResult) const
 }
 void AJankenGameState::TryResolveHands()
 {
+	//UŒ‚Žž‚Ì”»’è‚ð‹²‚Ýž‚Þ======================
+	 
+	
+
+	//=========================================
+	
 	if (Players[0].Hand != EHand::None && Players[1].Hand != EHand::None)
 	{
 		Phase = EPhase::CountingDown;
@@ -124,13 +130,23 @@ void AJankenGameState::TickCountdown()
 }
 void AJankenGameState::TryResolveActions()
 {
+
+	const int32 DefenderId = 1 - AttackerId;
+	//UŒ‚Žž‚Ì”»’è‚ð‹²‚Ýž‚Þ======================
+
+	bool AttackerOK = Players[AttackerId].bAttack;
+	bool DefenderOK = Players[DefenderId].bDefend;
+
+	for (URuleBase* Rl : ActiveRules)
+		Rl->ModifyAttack(AttackerOK, DefenderOK);
+	//=========================================
+
 	if (!(Players[0].bAttack || Players[0].bDefend) ||
 		!(Players[1].bAttack || Players[1].bDefend))
 		return;
 
-	const int32 DefenderId = 1 - AttackerId;
-	const bool AttackerOK = Players[AttackerId].bAttack;   // ŸŽÒ‚Í Attack
-	const bool DefenderOK = Players[DefenderId].bDefend;   // ”sŽÒ‚Í Defend
+	//const bool AttackerOK = Players[AttackerId].bAttack;   // ŸŽÒ‚Í Attack
+	//const bool DefenderOK = Players[DefenderId].bDefend;   // ”sŽÒ‚Í Defend
 
 	int32 Winner = -1;
 	if (AttackerOK && !DefenderOK)           Winner = AttackerId;        // UŒ‚¬Œ÷
@@ -148,14 +164,6 @@ void AJankenGameState::TryResolveActions()
 		CountdownTimerHandle, this, &AJankenGameState::NextRound, 2.f, false);
 }
 
-
-void URule_GuardBreak::PostResolve(AJankenGameState* GS, int32 WinnerId)
-{
-	if (!GS) return;
-	const bool bDefenderWon = (WinnerId != -1 && WinnerId != GS->AttackerId);
-	if (bDefenderWon && FMath::FRand() < 0.5f)      // 50% ‚Å”j‰ó
-		WinnerId = GS->AttackerId;
-}
 
 void AJankenGameState::HandlePhaseChanged(EPhase NewPhase)
 {

@@ -43,6 +43,8 @@ public:
 	UPROPERTY(BlueprintAssignable) FOnPhaseChanged OnPhaseChanged;
 	UPROPERTY(BlueprintAssignable) FOnCountdownTick OnCountdownTick;
 
+    UPROPERTY(BlueprintReadOnly)
+	TArray<TSubclassOf<URuleBase>> AvailableRuleClasses;
 
 protected:
 	virtual void BeginPlay() override;
@@ -59,6 +61,7 @@ private:
 	TArray<URuleBase*> ActiveRules;
 	FTimerHandle CountdownTimerHandle;
 
+	
 	/*デバッグ用*/
 	UFUNCTION()
 	void HandlePhaseChanged(EPhase NewPhase);

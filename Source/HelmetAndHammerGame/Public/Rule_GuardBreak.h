@@ -13,8 +13,9 @@ class HELMETANDHAMMERGAME_API URule_GuardBreak : public URuleBase
 	GENERATED_BODY()
 	
 public:
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GuardBreak")
-	float BreakChance = 0.5f;
-
-	void PostResolve(class AJankenGameState* GS, int32 WinnreId) override;
+	const float GuardBreakChance = 0.5f;   // 50% ‚Å Guard Break
+	virtual void ModifyAttack_Implementation(bool& bAtk, bool& /*bDef*/) const override
+	{
+		if (bAtk && FMath::FRand() < GuardBreakChance)  bAtk = false;
+	}
 };
