@@ -30,6 +30,7 @@ private:
 	void OnAttack();
 	void OnDefend();
 
+	void CommitSelectedRules();
 	void SendHandAndRules(EHand Hand);
 	void SendAction(bool bAttack);
 

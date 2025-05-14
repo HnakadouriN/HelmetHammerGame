@@ -46,6 +46,9 @@ public:
     UPROPERTY(BlueprintReadOnly)
 	TArray<TSubclassOf<URuleBase>> AvailableRuleClasses;
 
+	UFUNCTION(BlueprintCallable)
+	void SetRulesAndStart(const TArray<int32>& RuleIdx);
+
 
 	void ApplySelectedRules(const TArray<int32>& Indices);
 	void ApplyRulesAndHand(int32 PlayerId, EHand Hand, const TArray<int32>& RuleIdx);

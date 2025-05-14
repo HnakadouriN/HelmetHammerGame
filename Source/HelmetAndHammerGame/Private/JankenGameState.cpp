@@ -19,6 +19,7 @@ void AJankenGameState::BeginPlay()
 		URule_GuardBreak::StaticClass(),
 		URule_Reverse::StaticClass()
 	};
+	Phase = EPhase::RuleSelect;
 
 	OnPhaseChanged.AddDynamic(this, &AJankenGameState::HandlePhaseChanged);
 
@@ -74,7 +75,7 @@ void AJankenGameState::NextRound()
 	Players[1] = FPlayerRoundInfo{};
 	AttackerId = -1;
 
-	Phase = EPhase::WaitingInput;
+	Phase = EPhase::RuleSelect;
 	OnPhaseChanged.Broadcast(Phase);
 }
 int32 AJankenGameState::CalcResultRaw() const
@@ -95,12 +96,6 @@ int32 AJankenGameState::ApplyRulesToResult(int32 BaseResult) const
 }
 void AJankenGameState::TryResolveHands()
 {
-	//UŒ‚‚Ì”»’è‚ğ‹²‚İ‚Ş======================
-	 
-	
-
-	//=========================================
-	
 	if (Players[0].Hand != EHand::None && Players[1].Hand != EHand::None)
 	{
 		Phase = EPhase::CountingDown;
@@ -112,14 +107,6 @@ void AJankenGameState::TryResolveHands()
 			CountdownTimerHandle, this, &AJankenGameState::TickCountdown, 1.f, true);
 	}
 
-	//if (Players[0].Hand == EHand::None || Players[1].Hand == EHand::None) return;
-
-	//Phase = EPhase::CountingDown;
-	//OnPhaseChanged.Broadcast(Phase);
-
-	///* 5 •bŒã‚Éè‚ğŒöŠJ‚µU–hƒtƒF[ƒY‚Ö */
-	//GetWorldTimerManager().SetTimer(
-	//	CountdownTimerHandle, this, &AJankenGameState::EnterActionPhase, 5.f, false);
 }
 void AJankenGameState::TickCountdown()
 {
@@ -151,9 +138,6 @@ void AJankenGameState::TryResolveActions()
 		!(Players[1].bAttack || Players[1].bDefend))
 		return;
 
-	//const bool AttackerOK = Players[AttackerId].bAttack;   // ŸÒ‚Í Attack
-	//const bool DefenderOK = Players[DefenderId].bDefend;   // ”sÒ‚Í Defend
-
 	int32 Winner = -1;
 	if (AttackerOK && !DefenderOK)           Winner = AttackerId;        // UŒ‚¬Œ÷
 	else if (!AttackerOK && DefenderOK)      Winner = DefenderId;        // –hŒä¬Œ÷
@@ -162,6 +146,20 @@ void AJankenGameState::TryResolveActions()
 		? AttackerId : DefenderId;
 	else                                     Winner = AttackerId;        // —¼ƒ~ƒX ¨ ç”õ‘¤
 
+	//–hŒä¬Œ÷‚ÍŒJ‚è•Ô‚µ
+	if (Winner == AttackerId)             
+	{
+		/* Ÿ”s‚ğƒNƒŠƒA‚µ‚ÄèD“ü—ÍƒtƒF[ƒY‚Ö */
+		Players[0] = FPlayerRoundInfo{};
+		Players[1] = FPlayerRoundInfo{};
+		AttackerId = -1;
+
+		Phase = EPhase::WaitingInput;
+		OnPhaseChanged.Broadcast(Phase);
+		return;                              // Resolve ‚Öi‚Ü‚È‚¢
+	}
+
+	//UŒ‚‘¤‚ªŸ—˜‚µ‚½ê‡Resolve‚Ö
 	Players[Winner].bWin = true;
 	Phase = EPhase::Resolve;
 	OnPhaseChanged.Broadcast(Phase);
@@ -197,7 +195,16 @@ void AJankenGameState::ApplyRulesAndHand(int32 PlayerId, EHand Hand, const TArra
 	/* 3) èD‚ğ“o˜^iŠù‘¶ŠÖ”‚ğÄ—˜—pj */
 	SetPlayerHand(PlayerId, Hand);
 }
+void AJankenGameState::SetRulesAndStart(const TArray<int32>& RuleIdx)
+{
+	ApplySelectedRules(RuleIdx);           
+	Players[0] = FPlayerRoundInfo{};
+	Players[1] = FPlayerRoundInfo{};
+	AttackerId = -1;
 
+	Phase = EPhase::WaitingInput;          // è‘I‘ğ‚Ö
+	OnPhaseChanged.Broadcast(Phase);
+}
 void AJankenGameState::HandlePhaseChanged(EPhase NewPhase)
 {
 	UE_LOG(LogTemp, Log, TEXT("[Phase] %s  P0=%s  P1=%s  Attacker=%d"),

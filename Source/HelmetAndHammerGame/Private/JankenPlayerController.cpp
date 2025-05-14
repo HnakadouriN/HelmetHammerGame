@@ -46,17 +46,15 @@ void AJankenPlayerController::OnDefend()
 void AJankenPlayerController::SendHandAndRules(EHand Hand)
 {
 	if (AJankenGameState* GS = GetWorld()->GetGameState<AJankenGameState>())
-	{
-		GS->ApplyRulesAndHand(                      // ★ GameState 側の新関数
-			GetLocalPlayer()->GetControllerId(),
-			Hand,
-			SelectedRuleIndices);
-
-		SelectedRuleIndices.Reset();                    // 送信後クリア
-	}
+		GS->SetPlayerHand(GetLocalPlayer()->GetControllerId(), Hand);
 }
 void AJankenPlayerController::SendAction(bool bAtk)
 {
 	if (AJankenGameState* GS = GetWorld()->GetGameState<AJankenGameState>())
 		GS->SetPlayerAction(GetLocalPlayer()->GetControllerId(), bAtk);
+}
+void AJankenPlayerController::CommitSelectedRules()
+{
+	if (AJankenGameState* GS = GetWorld()->GetGameState<AJankenGameState>())
+		GS->SetRulesAndStart(SelectedRuleIndices);
 }

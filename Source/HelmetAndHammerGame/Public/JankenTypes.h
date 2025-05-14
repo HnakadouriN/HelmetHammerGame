@@ -23,12 +23,13 @@ enum class EAction :uint8
 UENUM(BlueprintType)
 enum class EPhase :uint8
 {
-	WaitingInput,
-	CountingDown,
-	HandResult,
-	ActionSelect,
-	Resolve,
-	Finished
+	RuleSelect UMETA(DisplayName = "RuleSelect"),
+	WaitingInput UMETA(DisplayName = "SelectHand"),
+	CountingDown UMETA(DisplayName = "CountDown"),
+	HandResult UMETA(DisplayName = "Result"),
+	ActionSelect UMETA(DisplayName = "ActionSelect"),
+	Resolve UMETA(DisplayName = "Battle!!"),
+	Finished UMETA(DisplayName = "")
 };
 
 //1プレーヤー分のラウンド情報
