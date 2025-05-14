@@ -46,6 +46,10 @@ public:
     UPROPERTY(BlueprintReadOnly)
 	TArray<TSubclassOf<URuleBase>> AvailableRuleClasses;
 
+
+	void ApplySelectedRules(const TArray<int32>& Indices);
+	void ApplyRulesAndHand(int32 PlayerId, EHand Hand, const TArray<int32>& RuleIdx);
+
 protected:
 	virtual void BeginPlay() override;
 
@@ -58,6 +62,8 @@ private:
 	int32 ApplyRulesToResult(int32) const;
 	void TickCountdown();
 
+
+	UPROPERTY(BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	TArray<URuleBase*> ActiveRules;
 	FTimerHandle CountdownTimerHandle;
 

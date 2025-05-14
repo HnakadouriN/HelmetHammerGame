@@ -1,5 +1,6 @@
 #include "JankenPlayerController.h"
 #include "JankenGameState.h"
+#include "JankenTypes.h"
 #include "Rule_Reverse.h"
 
 
@@ -22,17 +23,17 @@ void AJankenPlayerController::OnRock()
 {
 	UE_LOG(LogTemp, Log, TEXT("Input: ROCK"));
 	if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Green, TEXT("ROCK"));
-	SendHand(EHand::Rock);
+	SendHandAndRules(EHand::Rock);
 }
 void AJankenPlayerController::OnScissors()
 {
 	UE_LOG(LogTemp, Log, TEXT("Input: SCISSORS"));
 	if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Green, TEXT("SCISSORS"));
-	SendHand(EHand::Scissors);
+	SendHandAndRules(EHand::Scissors);
 }
 void AJankenPlayerController::OnPaper()
 {
-	SendHand(EHand::Paper);
+	SendHandAndRules(EHand::Paper);
 }
 void AJankenPlayerController::OnAttack()
 {
@@ -42,15 +43,20 @@ void AJankenPlayerController::OnDefend()
 {
 	SendAction(false);
 }
-void AJankenPlayerController::SendHand(EHand Hand)
+void AJankenPlayerController::SendHandAndRules(EHand Hand)
 {
-	AJankenGameState* GS = GetWorld()->GetGameState<AJankenGameState>();
-	int32 ControllerId = GetLocalPlayer()->GetControllerId();
-	if (GS) GS->SetPlayerHand(ControllerId, Hand);
+	if (AJankenGameState* GS = GetWorld()->GetGameState<AJankenGameState>())
+	{
+		GS->ApplyRulesAndHand(                      // ★ GameState 側の新関数
+			GetLocalPlayer()->GetControllerId(),
+			Hand,
+			SelectedRuleIndices);
+
+		SelectedRuleIndices.Reset();                    // 送信後クリア
+	}
 }
 void AJankenPlayerController::SendAction(bool bAtk)
 {
-	AJankenGameState* GS = GetWorld()->GetGameState<AJankenGameState>();
-	int32 ControllerId = GetLocalPlayer()->GetControllerId();
-	if (GS) GS->SetPlayerAction(ControllerId, bAtk);
+	if (AJankenGameState* GS = GetWorld()->GetGameState<AJankenGameState>())
+		GS->SetPlayerAction(GetLocalPlayer()->GetControllerId(), bAtk);
 }

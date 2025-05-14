@@ -1,5 +1,6 @@
 #include "JankenGameState.h"
 #include "Rule_GuardBreak.h"
+#include "Rule_Reverse.h"
 #include "TimerManager.h"
 #include "Engine/Engine.h"
 
@@ -13,6 +14,11 @@ void AJankenGameState::BeginPlay()
 	Super::BeginPlay();
 
 	Players.Init(FPlayerRoundInfo{}, 2);
+
+	AvailableRuleClasses = {
+		URule_GuardBreak::StaticClass(),
+		URule_Reverse::StaticClass()
+	};
 
 	OnPhaseChanged.AddDynamic(this, &AJankenGameState::HandlePhaseChanged);
 
@@ -163,7 +169,34 @@ void AJankenGameState::TryResolveActions()
 	GetWorldTimerManager().SetTimer(
 		CountdownTimerHandle, this, &AJankenGameState::NextRound, 2.f, false);
 }
+void AJankenGameState::ApplySelectedRules(const TArray<int32>& Indices)
+{
+	for (URuleBase* R : ActiveRules) if (R) R->ConditionalBeginDestroy();
+	ActiveRules.Empty();
 
+	for (int32 Idx : Indices)
+		if (AvailableRuleClasses.IsValidIndex(Idx))
+			ActiveRules.Add(NewObject<URuleBase>(this, AvailableRuleClasses[Idx]));
+}
+void AJankenGameState::ApplyRulesAndHand(int32 PlayerId, EHand Hand, const TArray<int32>& RuleIdx)
+{
+	for (URuleBase* R : ActiveRules)
+		if (R) R->ConditionalBeginDestroy();
+	ActiveRules.Empty();
+
+	/* 2) RuleIdx をもとに新しいルールをインスタンス化 */
+	for (int32 Idx : RuleIdx)
+	{
+		if (AvailableRuleClasses.IsValidIndex(Idx))
+		{
+			URuleBase* NewRule = NewObject<URuleBase>(this, AvailableRuleClasses[Idx]);
+			ActiveRules.Add(NewRule);
+		}
+	}
+
+	/* 3) 手札を登録（既存関数を再利用） */
+	SetPlayerHand(PlayerId, Hand);
+}
 
 void AJankenGameState::HandlePhaseChanged(EPhase NewPhase)
 {
